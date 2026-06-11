@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASMR Mastery Prompt Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d14;
+      --surface:   #14141f;
+      --card:      #1a1a2a;
+      --border:    #2a2a40;
+      --accent:    #7c6bff;
+      --accent2:   #00d4aa;
+      --text:      #e8e8f0;
+      --muted:     #7070a0;
+      --danger:    #ff4d6d;
+      --success:   #00d4aa;
+      --radius:    12px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124,107,255,.15);
+      border: 1px solid rgba(124,107,255,.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+    .badge::before { content: "✦"; font-size: 10px; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(22px, 5vw, 36px);
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.15;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    /* ── Card ── */
+    .card {
+      max-width: 660px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px;
+      box-shadow: 0 0 60px rgba(124,107,255,.07);
+    }
+
+    /* ── Section divider ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 22px 0 14px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .span-2 { grid-column: span 2; }
+    @media (max-width: 480px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .span-2 { grid-column: span 1; }
+    }
+
+    /* ── Field ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+    input, select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+      width: 100%;
+    }
+    input::placeholder { color: var(--muted); }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,107,255,.15);
+    }
+    select { cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237070a0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    option { background: var(--surface); }
+
+    /* ── Generate button ── */
+    #generateBtn {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: opacity .2s, transform .15s;
+      position: relative;
+      overflow: hidden;
+    }
+    #generateBtn:hover { opacity: .9; transform: translateY(-1px); }
+    #generateBtn:active { transform: translateY(0); }
+    #generateBtn .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #generateBtn.loading .btn-text { display: none; }
+    #generateBtn.loading .spinner { display: block; }
+
+    /* ── Output area ── */
+    #outputArea {
+      margin-top: 22px;
+      display: none;
+    }
+    #outputArea.visible { display: block; animation: fadeIn .4s ease; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .output-header span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    #charCount {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--accent2);
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s;
+    }
+    textarea:focus { border-color: var(--accent2); }
+
+    /* ── Action buttons row ── */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .btn-action {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity .2s, transform .12s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-action:hover { opacity: .85; transform: translateY(-1px); }
+    .btn-action:active { transform: none; }
+    #copyBtn {
+      background: var(--danger);
+      color: #fff;
+    }
+    #copyBtn.copied {
+      background: var(--success);
+    }
+    #resetBtn {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    /* ── Helpline button ── */
+    .helpline-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 999;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: linear-gradient(135deg, #1877f2, #0a5dc2);
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 30px;
+      text-decoration: none;
+      letter-spacing: .04em;
+      box-shadow: 0 4px 18px rgba(24,119,242,.4);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .helpline-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(24,119,242,.55);
+    }
+    .helpline-btn svg {
+      width: 14px; height: 14px; fill: #fff; flex-shrink: 0;
+    }
+
+    /* ── Footer tip ── */
+    .tip {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .tip strong { color: var(--accent); }
+
+    /* ── Footer copyright ── */
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .03em;
+    }
+    footer span { color: var(--accent2); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- Helpline button -->
+  <a class="helpline-btn" href="https://www.facebook.com/iamnhrana" target="_blank" rel="noopener">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-7 9h-2V7h2v4zm0 4h-2v-2h2v2z"/></svg>
+    Help Line
+  </a>
+
+  <header>
+    <div class="badge">AI Prompt Generator</div>
+    <h1>ASMR Mastery<br>Prompt Engine</h1>
+    <p>Professional YouTube content blueprints — generated in seconds.</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Channel & Genre -->
+    <div class="section-label">Channel Setup</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>চ্যানেলের নাম</label>
+        <input type="text" id="channelName" placeholder="যেমন: Zen Clay ASMR" />
+      </div>
+      <div class="field">
+        <label>ভিডিওর ক্যাটাগরি</label>
+        <select id="genre">
+          <option value="Slime ASMR">🫧 Slime (স্লাইম)</option>
+          <option value="Candy Unboxing">🍬 Candy (ক্যান্ডি)</option>
+          <option value="Toy Unboxing">🧸 Toy Unboxing</option>
+          <option value="Mystery Box">📦 Mystery Box</option>
+          <option value="Clay ASMR">🎨 Clay ASMR</option>
+          <option value="Sand Cutting ASMR">🏖️ Sand Cutting</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Video specs -->
+    <div class="section-label">Video Architecture</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>ভিডিওর দৈর্ঘ্য</label>
+        <select id="duration">
+          <option value="3 Minutes">3 Minutes</option>
+          <option value="5 Minutes">5 Minutes</option>
+          <option value="10 Minutes">10 Minutes</option>
+          <option value="15 Minutes">15 Minutes</option>
+          <option value="20 Minutes">20 Minutes</option>
+          <option value="25 Minutes">25 Minutes</option>
+          <option value="30 Minutes">30 Minutes</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>সিনের দৈর্ঘ্য</label>
+        <select id="sceneLength">
+          <option value="6 Seconds">6 Seconds</option>
+          <option value="8 Seconds">8 Seconds</option>
+          <option value="10 Seconds">10 Seconds</option>
+          <option value="12 Seconds">12 Seconds</option>
+          <option value="15 Seconds">15 Seconds</option>
+          <option value="18 Seconds">18 Seconds</option>
+          <option value="20 Seconds">20 Seconds</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Audio & Visual -->
+    <div class="section-label">Audio & Visual Style</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>ভয়েসওভার টাইপ</label>
+        <select id="voiceover">
+          <option value="Excited Teen Girl (Engaging, high energy)">🎤 Excited Teen Girl</option>
+          <option value="Soft-spoken Adult Female (Calm, soothing)">🎙️ Soft-spoken Female</option>
+          <option value="No Voiceover — Pure ASMR sounds only">🔇 No Voiceover (Pure ASMR)</option>
+          <option value="Energetic Male Host">🎧 Energetic Male Host</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>হাতের ধরন</label>
+        <select id="handsStyle">
+          <option value="Girl hands with colorful nail polish (vibrant, youthful)">💅 Girl Hands (Nail Polish)</option>
+          <option value="Clean, well-groomed Male hands">🤲 Clean Male Hands</option>
+          <option value="Small Baby or Child hands">👶 Baby Hands</option>
+          <option value="Elegant hands with neutral manicure">✨ Elegant Neutral Hands</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <div class="section-label">Output Language</div>
+    <div class="grid-2">
+      <div class="field span-2">
+        <label>টার্গেট ভাষা</label>
+        <select id="language">
+          <option value="English">🇬🇧 English</option>
+          <option value="Bangla">🇧🇩 বাংলা</option>
+          <option value="Hindi">🇮🇳 Hindi</option>
+          <option value="Spanish">🇪🇸 Spanish</option>
+          <option value="Arabic">🇸🇦 Arabic</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <button id="generateBtn" onclick="generate()">
+      <span class="btn-text">⚡ Generate Professional Prompt</span>
+      <span class="spinner"></span>
+    </button>
+
+    <!-- Output -->
+    <div id="outputArea">
+      <div class="output-header">
+        <span>Generated Prompt</span>
+        <span id="charCount"></span>
+      </div>
+      <textarea id="output" readonly></textarea>
+      <div class="action-row">
+        <button id="copyBtn" class="btn-action" onclick="copy()">📋 Copy Prompt</button>
+        <button id="resetBtn" class="btn-action" onclick="reset()">↺ Reset</button>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="tip">Tip: Paste this prompt into <strong>ChatGPT, Claude, or Gemini</strong> for a full video script &amp; storyboard.</p>
+
+  <footer>
+    © 2026 <span>Nh Zone</span>. All Rights Reserved.
+  </footer>
+
+  <script>
+    function generate() {
+      const btn = document.getElementById('generateBtn');
+      btn.classList.add('loading');
+
+      setTimeout(() => {
+        const channel  = document.getElementById('channelName').value.trim() || "My Channel";
+        const genre    = document.getElementById('genre').value;
+        const duration = document.getElementById('duration').value;
+        const scene    = document.getElementById('sceneLength').value;
+        const vo       = document.getElementById('voiceover').value;
+        const hands    = document.getElementById('handsStyle').value;
+        const lang     = document.getElementById('language').value;
+
+        const prompt = `Act as an expert YouTube AI content creator and master scriptwriter for short-form ASMR content.
+
+Create a highly retention-optimized video blueprint and full script based on these exact parameters:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[CHANNEL IDENTITY]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Channel Name   : ${channel}
+• Target Language: ${lang}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[VIDEO ARCHITECTURE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Content Genre  : ${genre}
+• Total Duration : ${duration}
+• Scene Pacing   : Cut to a new scene every ${scene}
+• Visual Focus   : ${hands}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[AUDIO EXPERIENCE]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Voiceover Style: ${vo}
+• Sound Design   : Ultra-crisp, satisfying ASMR trigger sounds
+                   (crinkling, tapping, squishing, scratching)
+                   that perfectly match each visual action.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DELIVERABLES — provide all of the following]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. HOOK (0:00–0:05)
+   Write an irresistible opening hook that stops the scroll.
+   Describe the exact first frame, action, and sound.
+
+2. SCENE-BY-SCENE STORYBOARD
+   For every scene, provide:
+   • Scene #  | Timestamp
+   • Camera angle / shot description
+   • Exact hand action (what the ${hands} are doing)
+   • ASMR sound effect (specific, vivid — no generic labels)
+   • Voiceover line in ${lang} (if applicable)
+   • Emotional trigger / retention hook for this moment
+
+3. THUMBNAIL CONCEPT
+   Describe a click-worthy thumbnail: layout, text overlay,
+   color palette, and the single "wow" element.
+
+4. TITLE + DESCRIPTION (in ${lang})
+   • 3 title variants (curiosity-driven, emotional, trending)
+   • SEO-optimised description (150 words)
+   • 15 hashtags
+
+5. RETENTION TIPS
+   Identify the 2 moments most likely to cause drop-off and
+   suggest how to fix them.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[TONE & QUALITY RULES]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Zero generic placeholders — every detail must be specific.
+• Pacing must be engineered for maximum viewer retention.
+• Write all voiceover in ${lang}; keep all structural labels in English.
+• Think like a viral content strategist, not a generic scriptwriter.`;
+
+        document.getElementById('output').value = prompt;
+        document.getElementById('charCount').textContent = prompt.length + " chars";
+
+        const area = document.getElementById('outputArea');
+        area.classList.add('visible');
+        area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        btn.classList.remove('loading');
+      }, 700);
+    }
+
+    function copy() {
+      const text = document.getElementById('output').value;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = "✓ Copied!";
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = "📋 Copy Prompt";
+          btn.classList.remove('copied');
+        }, 2200);
+      });
+    }
+
+    function reset() {
+      document.getElementById('output').value = "";
+      document.getElementById('outputArea').classList.remove('visible');
+      document.getElementById('channelName').value = "";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
